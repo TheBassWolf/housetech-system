@@ -19,6 +19,44 @@ const db = mysql.createPool({
     connectionLimit: 10
 });
 
+// RUTA 1: Pedidos Simplificada
+// Endpoint: Obtener Pedidos (Dashboard Admin)
+app.get('/api/admin/pedidos', (req, res) => {
+    const query = `
+        SELECT 
+            p.id_pedido, 
+            IFNULL(c.nombre, 'Cliente General') AS cliente, 
+            p.estado, 
+            IFNULL(SUM(dp.cantidad * dp.precio_unitario), 0) AS monto_total
+        FROM pedido p
+        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+        LEFT JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
+        GROUP BY p.id_pedido, c.nombre, p.estado
+        ORDER BY p.id_pedido DESC
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error("---> ERROR EN CONSULTA DE PEDIDOS:", err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+// RUTA 2: Inventario Directo de Productos
+app.get('/api/admin/productos', (req, res) => {
+    const query = 'SELECT id_producto, nombre, descripcion, precio_base, stock FROM producto';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error("Error al obtener productos:", err);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log("Productos encontrados en DB:", results);
+        res.json(results);
+    });
+});
+
 // 1. AUTENTICACIÓN
 app.post('/api/login', (req, res) => {
     const correo = req.body.correo;
@@ -39,18 +77,22 @@ app.post('/api/login', (req, res) => {
 });
 
 // 2. DASHBOARD - LISTAR PEDIDOS
+// Ruta de Pedidos para el Dashboard (LEFT JOIN para mostrar pedidos incluso si no tienen detalle aún)
 app.get('/api/admin/pedidos', (req, res) => {
     const query = `
         SELECT p.id_pedido, c.nombre AS cliente, p.estado, 
                IFNULL(SUM(dp.cantidad * dp.precio_unitario), 0) AS monto_total
         FROM pedido p
-        JOIN cliente c ON p.id_cliente = c.id_cliente
+        INNER JOIN cliente c ON p.id_cliente = c.id_cliente
         LEFT JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
         GROUP BY p.id_pedido, c.nombre, p.estado
         ORDER BY p.id_pedido DESC
     `;
     db.query(query, (err, results) => {
-        if (err) return res.status(500).send(err);
+        if (err) {
+            console.error("Error consultando pedidos:", err);
+            return res.status(500).send(err);
+        }
         res.json(results);
     });
 });
@@ -93,9 +135,14 @@ app.post('/api/admin/pedido/nuevo', (req, res) => {
 });
 
 // 5. INVENTARIO Y BODEGAS
+// Ruta de Productos/Inventario
 app.get('/api/admin/productos', (req, res) => {
-    db.query('SELECT * FROM producto', (err, results) => {
-        if (err) return res.status(500).send(err);
+    const query = 'SELECT id_producto, nombre, descripcion, precio_base, stock FROM producto';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error("Error consultando inventario:", err);
+            return res.status(500).send(err);
+        }
         res.json(results);
     });
 });
