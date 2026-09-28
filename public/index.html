@@ -33,41 +33,43 @@
         <footer>Acceso Protegido bajo Estándar ISO 27001</footer>
     </div>
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const correoInput = document.getElementById('correo').value;
-            const contrasenaInput = document.getElementById('contrasena').value;
+  // Capturamos el formulario por su ID o etiqueta
+  const loginForm = document.querySelector('form');
 
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        correo: correoInput,
-                        contrasena: contrasenaInput
-                    })
-                });
+  loginForm.addEventListener('submit', async function(e) {
+      // 1. OBLIGATORIO: Detener la recarga nativa del formulario
+      e.preventDefault();
 
-                const data = await res.json();
+      const email = document.getElementById('correo').value; // O 'email' según el ID de tu input
+      const password = document.getElementById('contrasena').value; // O 'password'
 
-                if (res.ok && data.success) {
-                    if (data.user.rol === 'Administrador') {
-                        window.location.href = '/admin.html';
-                    } else if (data.user.rol === 'Conductor') {
-                        window.location.href = '/conductor.html';
-                    } else {
-                        alert('Acceso concedido como ' + data.user.rol);
-                    }
-                } else {
-                    // Muestra el mensaje enviado por la API o un texto descriptivo
-                    alert(data.message || data.error || 'Error en las credenciales de acceso');
-                }
-            } catch (err) {
-                console.error('Error de red:', err);
-                alert('No se pudo conectar con el servidor backend. Verifica que node server.js esté ejecutándose.');
-            }
-        });
-    </script>
+      try {
+          const response = await fetch('/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ correo: email, contrasena: password })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+              alert("Acceso concedido como " + data.rol);
+              
+              // 2. Redirección forzada usando asignación directa
+              if (data.rol === 'Admin') {
+                  window.location.assign('admin.html');
+              } else {
+                  window.location.assign('conductor.html');
+              }
+          } else {
+              alert(data.mensaje || "Credenciales incorrectas");
+          }
+      } catch (error) {
+          console.error("Error en la petición:", error);
+          alert("Error de conexión con el servidor");
+      }
+  });
+</script>
 </body>
 </html>
+
