@@ -35,21 +35,37 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    correo: document.getElementById('correo').value,
-                    contrasena: document.getElementById('contrasena').value
-                })
-            });
-            const data = await res.json();
-            if(data.success) {
-                if(data.user.rol === 'Administrador') window.location.href = '/admin.html';
-                else if(data.user.rol === 'Conductor') window.location.href = '/conductor.html';
-                else alert('Acceso concedido como ' + data.user.rol);
-            } else {
-                alert(data.message);
+            
+            const correoInput = document.getElementById('correo').value;
+            const contrasenaInput = document.getElementById('contrasena').value;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        correo: correoInput,
+                        contrasena: contrasenaInput
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    if (data.user.rol === 'Administrador') {
+                        window.location.href = '/admin.html';
+                    } else if (data.user.rol === 'Conductor') {
+                        window.location.href = '/conductor.html';
+                    } else {
+                        alert('Acceso concedido como ' + data.user.rol);
+                    }
+                } else {
+                    // Muestra el mensaje enviado por la API o un texto descriptivo
+                    alert(data.message || data.error || 'Error en las credenciales de acceso');
+                }
+            } catch (err) {
+                console.error('Error de red:', err);
+                alert('No se pudo conectar con el servidor backend. Verifica que node server.js esté ejecutándose.');
             }
         });
     </script>

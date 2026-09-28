@@ -8,79 +8,158 @@
         .sidebar { width: 220px; background: #233241; color: white; padding: 20px; }
         .sidebar h2 { font-size: 18px; border-bottom: 1px solid #3d4e61; padding-bottom: 10px; }
         .sidebar ul { list-style: none; padding: 0; }
-        .sidebar li { padding: 10px 0; color: #a2b4c7; cursor: pointer; }
-        .sidebar li.active { color: white; font-weight: bold; }
-        .content { flex: 1; padding: 25px; }
+        .sidebar li { padding: 12px 10px; color: #a2b4c7; cursor: pointer; border-radius: 4px; }
+        .sidebar li:hover, .sidebar li.active { color: white; background: #34495e; font-weight: bold; }
+        .content { flex: 1; padding: 25px; overflow-y: auto; }
         .kpi-container { display: flex; gap: 20px; margin-bottom: 25px; }
         .card { flex: 1; padding: 15px; border-radius: 4px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card-green { background: #e2f0d9; border-left: 5px solid #70ad47; }
         .card-yellow { background: #fff2cc; border-left: 5px solid #ffbf00; }
         .card-red { background: #fce4d6; border-left: 5px solid #c00000; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 15px; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background: #f2f2f2; }
-        .badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
-        .badge-ruta { background: #fff2cc; }
-        .badge-entregado { background: #e2f0d9; }
+        .btn { padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; }
+        .btn-blue { background: #3194d6; color: white; }
+        .btn-green { background: #70ad47; color: white; }
+        .form-box { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .form-box input, .form-box select { padding: 8px; margin-right: 10px; border: 1px solid #ccc; border-radius: 3px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>HouseTech S.A.S.</h2>
         <ul>
-            <li class="active">• Dashboard</li>
-            <li>Inventario & Bodegas</li>
-            <li>Ventas & Pedidos</li>
-            <li>Servicio Técnico</li>
-            <li>Logística & Envíos</li>
-            <li>Reportes & Analítica</li>
+            <li id="menuDashboard" class="active" onclick="mostrarSeccion('secDashboard')">• Dashboard</li>
+            <li id="menuPedidos" onclick="mostrarSeccion('secPedidos')">• Ventas & Pedidos</li>
+            <li id="menuInventario" onclick="mostrarSeccion('secInventario')">• Inventario & Bodegas</li>
+            <li onclick="alert('Módulo de Soporte Técnico activo.')">• Servicio Técnico</li>
+            <li onclick="window.location.href='/conductor.html'">• Logística & Envíos</li>
+            <li onclick="window.location.href='/'">• Cerrar Sesión</li>
         </ul>
     </div>
+
     <div class="content">
-        <h2>Panel de Control Principal - Rol: Administrador</h2>
-        <div class="kpi-container">
-            <div class="card card-green">
-                <small>Ventas del Mes</small>
-                <h3>$12,450,000</h3>
+        <!-- SECCIÓN 1: DASHBOARD -->
+        <div id="secDashboard">
+            <h2>Panel de Control Principal - Rol: Administrador</h2>
+            <div class="kpi-container">
+                <div class="card card-green"><small>Ventas del Mes</small><h3>$12,450,000</h3></div>
+                <div class="card card-yellow"><small>Pedidos en Ruta</small><h3>8 Activos</h3></div>
+                <div class="card card-red"><small>Alertas de Stock</small><h3>3 Críticas</h3></div>
             </div>
-            <div class="card card-yellow">
-                <small>Pedidos en Ruta</small>
-                <h3>8 Activos</h3>
-            </div>
-            <div class="card card-red">
-                <small>Alertas de Stock</small>
-                <h3>3 Críticas</h3>
+            <h3>Monitoreo en Tiempo Real - Últimos Pedidos</h3>
+            <table>
+                <thead>
+                    <tr><th>ID Pedido</th><th>Cliente</th><th>Estado</th><th>Monto Total</th><th>Acción</th></tr>
+                </thead>
+                <tbody id="tablaPedidosDashboard"></tbody>
+            </table>
+        </div>
+
+        <!-- SECCIÓN 2: NUEVO PEDIDO -->
+        <div id="secPedidos" style="display:none;">
+            <h2>Gestión de Ventas y Pedidos</h2>
+            <div class="form-box">
+                <h3>Crear Nuevo Pedido</h3>
+                <form id="formNuevoPedido">
+                    <select id="clienteId" required>
+                        <option value="1">Soluciones Matius S.A.S.</option>
+                        <option value="2">Almacenes Tech Bogotá</option>
+                    </select>
+                    <select id="productoId" required>
+                        <option value="1">Camara Domotica IP ($250,000)</option>
+                        <option value="2">Switch Red 24 Puertos ($1,200,000)</option>
+                    </select>
+                    <input type="number" id="cantidad" placeholder="Cantidad" value="1" min="1" required>
+                    <button type="submit" class="btn btn-green">Registrar Pedido</button>
+                </form>
             </div>
         </div>
 
-        <h3>Monitoreo en Tiempo Real - Últimos Pedidos</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID Pedido</th>
-                    <th>Cliente</th>
-                    <th>Estado</th>
-                    <th>Monto Total</th>
-                </tr>
-            </thead>
-            <tbody id="tablaPedidos"></tbody>
-        </table>
+        <!-- SECCIÓN 3: INVENTARIO -->
+        <div id="secInventario" style="display:none;">
+            <h2>Control de Inventario Multibodega</h2>
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Producto</th><th>Descripción</th><th>Precio Base</th><th>Stock Disponible</th></tr>
+                </thead>
+                <tbody id="tablaInventario"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
+        function mostrarSeccion(idSeccion) {
+            document.getElementById('secDashboard').style.display = 'none';
+            document.getElementById('secPedidos').style.display = 'none';
+            document.getElementById('secInventario').style.display = 'none';
+            
+            document.getElementById(idSeccion).style.display = 'block';
+
+            if(idSeccion === 'secDashboard') cargarPedidos();
+            if(idSeccion === 'secInventario') cargarInventario();
+        }
+
         async function cargarPedidos() {
             const res = await fetch('/api/admin/pedidos');
             const data = await res.json();
-            const tbody = document.getElementById('tablaPedidos');
-            tbody.innerHTML = data.map(p => `
+            document.getElementById('tablaPedidosDashboard').innerHTML = data.map(p => `
                 <tr>
                     <td>PED-00${p.id_pedido}</td>
                     <td>${p.cliente}</td>
-                    <td><span class="badge ${p.estado === 'En Ruta' ? 'badge-ruta' : 'badge-entregado'}">${p.estado}</span></td>
+                    <td><b>${p.estado}</b></td>
                     <td>$${parseFloat(p.monto_total).toLocaleString()}</td>
+                    <td>
+                        <button class="btn btn-blue" onclick="cambiarEstado(${p.id_pedido}, 'En Ruta')">Enviar a Ruta</button>
+                    </td>
                 </tr>
             `).join('');
         }
+
+        async function cambiarEstado(id_pedido, estado) {
+            await fetch('/api/admin/pedido/estado', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id_pedido, nuevo_estado: estado })
+            });
+            alert('Estado del pedido actualizado');
+            cargarPedidos();
+        }
+
+        async function cargarInventario() {
+            const res = await fetch('/api/admin/productos');
+            const data = await res.json();
+            document.getElementById('tablaInventario').innerHTML = data.map(p => `
+                <tr>
+                    <td>${p.id_producto}</td>
+                    <td>${p.nombre}</td>
+                    <td>${p.descripcion}</td>
+                    <td>$${parseFloat(p.precio_base).toLocaleString()}</td>
+                    <td><b>${p.stock} unidades</b></td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('formNuevoPedido').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prod = document.getElementById('productoId').value;
+            const precio = prod === "1" ? 250000 : 1200000;
+
+            await fetch('/api/admin/pedido/nuevo', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id_cliente: document.getElementById('clienteId').value,
+                    id_producto: prod,
+                    cantidad: document.getElementById('cantidad').value,
+                    precio_unitario: precio
+                })
+            });
+            alert('¡Pedido registrado! El stock del producto se descontó automáticamente mediante el Trigger.');
+            mostrarSeccion('secDashboard');
+        });
+
         cargarPedidos();
     </script>
 </body>
