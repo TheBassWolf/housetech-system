@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Control Principal - HouseTech S.A.S.</title>
+    <style>
+        body { margin:0; font-family: Arial, sans-serif; display: flex; height: 100vh; background: #f4f6f9; }
+        .sidebar { width: 220px; background: #233241; color: white; padding: 20px; }
+        .sidebar h2 { font-size: 18px; border-bottom: 1px solid #3d4e61; padding-bottom: 10px; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { padding: 10px 0; color: #a2b4c7; cursor: pointer; }
+        .sidebar li.active { color: white; font-weight: bold; }
+        .content { flex: 1; padding: 25px; }
+        .kpi-container { display: flex; gap: 20px; margin-bottom: 25px; }
+        .card { flex: 1; padding: 15px; border-radius: 4px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-green { background: #e2f0d9; border-left: 5px solid #70ad47; }
+        .card-yellow { background: #fff2cc; border-left: 5px solid #ffbf00; }
+        .card-red { background: #fce4d6; border-left: 5px solid #c00000; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f2f2f2; }
+        .badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
+        .badge-ruta { background: #fff2cc; }
+        .badge-entregado { background: #e2f0d9; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>HouseTech S.A.S.</h2>
+        <ul>
+            <li class="active">• Dashboard</li>
+            <li>Inventario & Bodegas</li>
+            <li>Ventas & Pedidos</li>
+            <li>Servicio Técnico</li>
+            <li>Logística & Envíos</li>
+            <li>Reportes & Analítica</li>
+        </ul>
+    </div>
+    <div class="content">
+        <h2>Panel de Control Principal - Rol: Administrador</h2>
+        <div class="kpi-container">
+            <div class="card card-green">
+                <small>Ventas del Mes</small>
+                <h3>$12,450,000</h3>
+            </div>
+            <div class="card card-yellow">
+                <small>Pedidos en Ruta</small>
+                <h3>8 Activos</h3>
+            </div>
+            <div class="card card-red">
+                <small>Alertas de Stock</small>
+                <h3>3 Críticas</h3>
+            </div>
+        </div>
+
+        <h3>Monitoreo en Tiempo Real - Últimos Pedidos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Monto Total</th>
+                </tr>
+            </thead>
+            <tbody id="tablaPedidos"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function cargarPedidos() {
+            const res = await fetch('/api/admin/pedidos');
+            const data = await res.json();
+            const tbody = document.getElementById('tablaPedidos');
+            tbody.innerHTML = data.map(p => `
+                <tr>
+                    <td>PED-00${p.id_pedido}</td>
+                    <td>${p.cliente}</td>
+                    <td><span class="badge ${p.estado === 'En Ruta' ? 'badge-ruta' : 'badge-entregado'}">${p.estado}</span></td>
+                    <td>$${parseFloat(p.monto_total).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+        cargarPedidos();
+    </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta de Entrega Logística</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 15px; }
+        .header-mobile { background: #1a4a75; color: white; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .card { background: white; padding: 15px; border-radius: 5px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .btn-estado { background: #70ad47; color: white; border: none; padding: 8px 12px; border-radius: 3px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header-mobile">
+        <strong>Ruta de Entrega: Norte-Bogotá</strong><br>
+        <small>Vehículo: Camioneta NHR-102</small>
+    </div>
+    <h3>ORDEN DE DESPACHO #042</h3>
+    <div id="listaEnvios"></div>
+
+    <script>
+        async function cargarEnvios() {
+            const res = await fetch('/api/conductor/envios');
+            const data = await res.json();
+            document.getElementById('listaEnvios').innerHTML = data.map((e, index) => `
+                <div class="card">
+                    <strong>${index + 1}. ${e.cliente}</strong><br>
+                    <small>Dirección: ${e.direccion_entrega}</small><br><br>
+                    <span>Estado: <b>${e.estado_envio}</b></span><br><br>
+                    ${e.estado_envio !== 'ENTREGADO' ? 
+                        `<button class="btn-estado" onclick="marcarEntregado(${e.id_envio})">Marcar Entregado</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function marcarEntregado(id) {
+            await fetch('/api/conductor/actualizar-estado', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_envio: id, nuevo_estado: 'ENTREGADO' })
+            });
+            cargarEnvios();
+        }
+        cargarEnvios();
+    </script>
+</body>
+</html>
