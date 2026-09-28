@@ -51,11 +51,11 @@
           });
 
           const data = await response.json();
+console.log("Respuesta del servidor:", data); // <-- Agrega esta línea
 
 if (response.ok) {
-    // Verificamos que el rol exista antes de evaluar
     const rolUsuario = data.rol;
-
+    
     if (rolUsuario === 'Admin') {
         alert("Acceso concedido como Administrador");
         window.location.assign('admin.html');

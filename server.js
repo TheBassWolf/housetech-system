@@ -63,20 +63,30 @@ app.get('/api/admin/productos', (req, res) => {
 
 // 1. AUTENTICACIÓN
 app.post('/api/login', (req, res) => {
-    const correo = req.body.correo;
-    const contrasena = req.body.contrasena || req.body.contraseña;
+    // Si tus inputs envían { correo, contrasena }
+    const { correo, contrasena } = req.body; 
 
-    if (!correo || !contrasena) {
-        return res.status(400).json({ success: false, message: 'Ingrese correo y contraseña' });
-    }
-
-    const hash = crypto.createHash('sha256').update(contrasena).digest('hex');
-    const query = 'SELECT id_usuario, nombre, correo, rol FROM usuario WHERE correo = ? AND contrasena = ? AND estado = TRUE';
-
-    db.query(query, [correo, hash], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (results.length === 0) return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
-        res.json({ success: true, user: results[0] });
+    // 1. Nos aseguramos de pedir explícitamente la columna 'rol'
+    const sql = "SELECT id_usuario, nombre, rol FROM usuario WHERE correo = ? AND contrasena = ?";
+    
+    db.query(sql, [correo, contrasena], (err, results) => {
+        if (err) {
+            console.error("Error SQL:", err);
+            return res.status(500).json({ mensaje: "Error en el servidor" });
+        }
+        
+        if (results.length > 0) {
+            const usuario = results[0];
+            
+            // 2. Enviamos 'rol' exactamente con ese nombre dentro del JSON
+            return res.json({ 
+                mensaje: "Login exitoso", 
+                rol: usuario.rol, 
+                nombre: usuario.nombre 
+            });
+        } else {
+            return res.status(401).json({ mensaje: "Credenciales incorrectas" });
+        }
     });
 });
 
