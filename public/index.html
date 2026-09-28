@@ -52,18 +52,22 @@
 
           const data = await response.json();
 
-          if (response.ok) {
-              alert("Acceso concedido como " + data.rol);
-              
-              // 2. Redirección forzada usando asignación directa
-              if (data.rol === 'Admin') {
-                  window.location.assign('admin.html');
-              } else {
-                  window.location.assign('conductor.html');
-              }
-          } else {
-              alert(data.mensaje || "Credenciales incorrectas");
-          }
+if (response.ok) {
+    // Verificamos que el rol exista antes de evaluar
+    const rolUsuario = data.rol;
+
+    if (rolUsuario === 'Admin') {
+        alert("Acceso concedido como Administrador");
+        window.location.assign('admin.html');
+    } else if (rolUsuario === 'Conductor') {
+        alert("Acceso concedido como Conductor");
+        window.location.assign('conductor.html');
+    } else {
+        alert("Error: Rol no reconocido (" + rolUsuario + ")");
+    }
+} else {
+    alert(data.mensaje || "Credenciales incorrectas");
+}
       } catch (error) {
           console.error("Error en la petición:", error);
           alert("Error de conexión con el servidor");
