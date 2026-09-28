@@ -63,26 +63,30 @@ app.get('/api/admin/productos', (req, res) => {
 
 // 1. AUTENTICACIÓN
 app.post('/api/login', (req, res) => {
-    // Si tus inputs envían { correo, contrasena }
-    const { correo, contrasena } = req.body; 
+    // Captura los valores enviados desde el cliente
+    const correo = req.body.correo || req.body.email;
+    const clave = req.body.contrasena || req.body.password;
 
-    // 1. Nos aseguramos de pedir explícitamente la columna 'rol'
-    const sql = "SELECT id_usuario, nombre, rol FROM usuario WHERE correo = ? AND contrasena = ?";
-    
-    db.query(sql, [correo, contrasena], (err, results) => {
+    // Consulta SQL utilizando los nombres exactos de las columnas en Railway
+    const sql = `
+        SELECT id_usuario, nombre, correo, rol 
+        FROM usuario 
+        WHERE correo = ? AND contrasena = SHA2(?, 256)
+    `;
+
+    db.query(sql, [correo, clave], (err, results) => {
         if (err) {
-            console.error("Error SQL:", err);
-            return res.status(500).json({ mensaje: "Error en el servidor" });
+            console.error("Error SQL en login:", err);
+            return res.status(500).json({ mensaje: "Error interno del servidor" });
         }
-        
+
         if (results.length > 0) {
             const usuario = results[0];
-            
-            // 2. Enviamos 'rol' exactamente con ese nombre dentro del JSON
-            return res.json({ 
-                mensaje: "Login exitoso", 
-                rol: usuario.rol, 
-                nombre: usuario.nombre 
+            // Devuelve la propiedad 'rol' necesaria para la redirección
+            return res.json({
+                mensaje: "Login exitoso",
+                rol: usuario.rol,
+                nombre: usuario.nombre
             });
         } else {
             return res.status(401).json({ mensaje: "Credenciales incorrectas" });
