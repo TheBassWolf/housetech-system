@@ -1,79 +1,27 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>HouseTech S.A.S. - Sistema de Gestión Integral</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; }
-        header { background-color: #1a2e40; color: white; padding: 15px 20px; font-weight: bold; }
-        .login-card { background: white; width: 350px; margin: 80px auto; padding: 30px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
-        .login-card h2 { margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #0088cc; display: inline-block; padding-bottom: 5px; }
-        .form-group { text-align: left; margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; margin-bottom: 5px; }
-        .form-group input { width: 93%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; }
-        button { background-color: #3194d6; color: white; border: none; padding: 10px; width: 100%; border-radius: 3px; font-weight: bold; cursor: pointer; }
-        footer { margin-top: 20px; font-size: 11px; color: #777; }
-    </style>
-</head>
-<body>
-    <header>HouseTech S.A.S. - Sistema de Gestión Integral</header>
-    <div class="login-card">
-        <h2>INICIO DE SESIÓN</h2>
-        <form id="loginForm">
-            <div class="form-group">
-                <label>Correo Electrónico:</label>
-                <input type="email" id="correo" value="admin@housetech.com.co" required>
-            </div>
-            <div class="form-group">
-                <label>Contraseña:</label>
-                <input type="password" id="contrasena" value="123456" required>
-            </div>
-            <button type="submit">Ingresar</button>
-        </form>
-        <footer>Acceso Protegido bajo Estándar ISO 27001</footer>
-    </div>
-    <script>
-  // Capturamos el formulario por su ID o etiqueta
-  const loginForm = document.querySelector('form');
-
-  loginForm.addEventListener('submit', async function(e) {
-      // 1. OBLIGATORIO: Detener la recarga nativa del formulario
-      e.preventDefault();
-
-      const email = document.getElementById('correo').value; // O 'email' según el ID de tu input
-      const password = document.getElementById('contrasena').value; // O 'password'
-
-      try {
-          const response = await fetch('/api/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ correo: email, contrasena: password })
-          });
-
-          const data = await response.json();
-console.log("Respuesta del servidor:", data); // <-- Agrega esta línea
-
-if (response.ok) {
-    const rolUsuario = data.rol;
-    
-    if (rolUsuario === 'Admin') {
-        alert("Acceso concedido como Administrador");
-        window.location.assign('admin.html');
-    } else if (rolUsuario === 'Conductor') {
-        alert("Acceso concedido como Conductor");
-        window.location.assign('conductor.html');
-    } else {
-        alert("Error: Rol no reconocido (" + rolUsuario + ")");
-    }
-} else {
-    alert(data.mensaje || "Credenciales incorrectas");
-}
-      } catch (error) {
-          console.error("Error en la petición:", error);
-          alert("Error de conexión con el servidor");
-      }
-  });
-</script>
-</body>
-</html>
-
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HouseTech S.A.S. · Acceso</title><link rel="stylesheet" href="css/style.css"></head>
+<body><div class="auth">
+<section class="hero"><h1>House<span>Tech</span></h1><p>Hardware, mantenimiento informático, conectividad y domótica en un solo lugar.</p>
+<ul><li>Compra productos y servicios desde tu carrito</li><li>Factura digital en pantalla y en PDF</li><li>Seguimiento de tus envíos en el mapa</li><li>Soporte técnico mediante tickets</li></ul></section>
+<section class="panel"><div class="box">
+<div class="tabs"><button id="tL" class="on" type="button">Iniciar sesión</button><button id="tR" type="button">Crear cuenta</button></div>
+<div id="msg" class="msg"></div>
+<form id="fL" novalidate>
+ <label for="lc">Correo electrónico</label><input id="lc" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" required>
+ <label for="lp">Contraseña</label><div class="pw"><input id="lp" type="password" autocomplete="current-password" required><button type="button" data-ver="lp">Mostrar</button></div>
+ <button class="btn" style="width:100%;margin-top:18px" id="bL">Ingresar</button>
+</form>
+<form id="fR" novalidate hidden>
+ <label for="rn">Nombre completo *</label><input id="rn" autocomplete="name" required>
+ <div class="row"><div><label for="rd">Documento</label><input id="rd" inputmode="numeric"></div><div><label for="rt">Teléfono</label><input id="rt" type="tel"></div></div>
+ <label for="rdir">Dirección</label><input id="rdir" autocomplete="street-address">
+ <label for="rc">Correo electrónico *</label><input id="rc" type="email" autocomplete="email" required><div id="hc" class="hint"></div>
+ <label for="rp">Contraseña * (mín. 8, letras y números)</label><div class="pw"><input id="rp" type="password" autocomplete="new-password" required><button type="button" data-ver="rp">Mostrar</button></div>
+ <div class="meter"><i id="mt"></i></div>
+ <label for="rp2">Confirmar contraseña *</label><input id="rp2" type="password" autocomplete="new-password" required><div id="hp" class="hint"></div>
+ <button class="btn" style="width:100%;margin-top:14px" id="bR">Crear cuenta</button>
+ <p class="muted" style="font-size:12px">Las cuentas nuevas se crean con rol Cliente.</p>
+</form>
+</div></section></div>
+<script src="js/login.js"></script></body></html>

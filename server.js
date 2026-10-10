@@ -1,192 +1,21 @@
-const express = require('express');
-const mysql = require('mysql2');
-const crypto = require('crypto');
 require('dotenv').config();
+const express = require('express');
 const path = require('path');
-const app = express();
+const { migrar } = require('./db');
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use((req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('X-Frame-Options', 'DENY'); next(); });
+app.use(express.json({ limit: '100kb' }));
+
+app.use('/api', require('./routes'));
+app.use('/api', (req, res) => res.status(404).json({ mensaje: 'Ruta no encontrada' }));
+
+// Solo se publica la carpeta /public (nunca .env, server.js ni db.js)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Conexión a MySQL
-const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    port: process.env.DB_PORT || 3306,
-    password: process.env.DB_PASSWORD || '', 
-    database: process.env.DB_NAME || 'housetech_system',
-    waitForConnections: true,
-    connectionLimit: 10
-});
-
-
-
-// RUTA 1: Pedidos Simplificada
-// Endpoint: Obtener Pedidos (Dashboard Admin)
-app.get('/api/admin/pedidos', (req, res) => {
-    const query = `
-        SELECT 
-            p.id_pedido, 
-            IFNULL(c.nombre, 'Cliente General') AS cliente, 
-            p.estado, 
-            IFNULL(SUM(dp.cantidad * dp.precio_unitario), 0) AS monto_total
-        FROM pedido p
-        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
-        LEFT JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
-        GROUP BY p.id_pedido, c.nombre, p.estado
-        ORDER BY p.id_pedido DESC
-    `;
-
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error("---> ERROR EN CONSULTA DE PEDIDOS:", err);
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
-    });
-});
-
-// RUTA 2: Inventario Directo de Productos
-app.get('/api/admin/productos', (req, res) => {
-    const query = 'SELECT id_producto, nombre, descripcion, precio_base, stock FROM producto';
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error("Error al obtener productos:", err);
-            return res.status(500).json({ error: err.message });
-        }
-        console.log("Productos encontrados en DB:", results);
-        res.json(results);
-    });
-});
-
-// 1. AUTENTICACIÓN
-app.post('/api/login', (req, res) => {
-    // Captura los valores enviados desde el cliente
-    const correo = req.body.correo || req.body.email;
-    const clave = req.body.contrasena || req.body.password;
-
-    // Consulta SQL utilizando los nombres exactos de las columnas en Railway
-    const sql = `
-        SELECT id_usuario, nombre, correo, rol 
-        FROM usuario 
-        WHERE correo = ? AND contrasena = SHA2(?, 256)
-    `;
-
-    db.query(sql, [correo, clave], (err, results) => {
-        if (err) {
-            console.error("Error SQL en login:", err);
-            return res.status(500).json({ mensaje: "Error interno del servidor" });
-        }
-
-        if (results.length > 0) {
-            const usuario = results[0];
-            // Devuelve la propiedad 'rol' necesaria para la redirección
-            return res.json({
-                mensaje: "Login exitoso",
-                rol: usuario.rol,
-                nombre: usuario.nombre
-            });
-        } else {
-            return res.status(401).json({ mensaje: "Credenciales incorrectas" });
-        }
-    });
-});
-
-// 2. DASHBOARD - LISTAR PEDIDOS
-// Ruta de Pedidos para el Dashboard (LEFT JOIN para mostrar pedidos incluso si no tienen detalle aún)
-app.get('/api/admin/pedidos', (req, res) => {
-    const query = `
-        SELECT p.id_pedido, c.nombre AS cliente, p.estado, 
-               IFNULL(SUM(dp.cantidad * dp.precio_unitario), 0) AS monto_total
-        FROM pedido p
-        INNER JOIN cliente c ON p.id_cliente = c.id_cliente
-        LEFT JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
-        GROUP BY p.id_pedido, c.nombre, p.estado
-        ORDER BY p.id_pedido DESC
-    `;
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error("Error consultando pedidos:", err);
-            return res.status(500).send(err);
-        }
-        res.json(results);
-    });
-});
-
-// 3. CAMBIAR ESTADO DE PEDIDO
-app.post('/api/admin/pedido/estado', (req, res) => {
-    const { id_pedido, nuevo_estado } = req.body;
-    db.query('UPDATE pedido SET estado = ? WHERE id_pedido = ?', [nuevo_estado, id_pedido], (err) => {
-        if (err) return res.status(500).send(err);
-        res.json({ success: true });
-    });
-});
-
-// 4. CREAR UN NUEVO PEDIDO Y PROCESAR TRIGGER DE STOCK (HU-001 y HU-002)
-app.post('/api/admin/pedido/nuevo', (req, res) => {
-    const { id_cliente, id_producto, cantidad, precio_unitario } = req.body;
-
-    // Insertar Pedido
-    db.query('INSERT INTO pedido (id_cliente, estado) VALUES (?, "Pendiente")', [id_cliente], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        
-        const id_pedido = result.insertId;
-
-        // Insertar Detalle (Dispara el TRIGGER 'descontar_stock' automáticamente)
-        db.query(
-            'INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
-            [id_pedido, id_producto, cantidad, precio_unitario],
-            (err2) => {
-                if (err2) return res.status(500).json({ error: err2.message });
-                
-                // Crear Registro de Envío para la App Móvil del Conductor
-                db.query(
-                    'INSERT INTO envio (id_pedido, direccion_entrega, estado_envio) VALUES (?, "Calle 100 # 15-20", "PENDIENTE")',
-                    [id_pedido],
-                    () => res.json({ success: true, id_pedido })
-                );
-            }
-        );
-    });
-});
-
-// 5. INVENTARIO Y BODEGAS
-// Ruta de Productos/Inventario
-app.get('/api/admin/productos', (req, res) => {
-    const query = 'SELECT id_producto, nombre, descripcion, precio_base, stock FROM producto';
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error("Error consultando inventario:", err);
-            return res.status(500).send(err);
-        }
-        res.json(results);
-    });
-});
-
-// 6. LOGÍSTICA DEL CONDUCTOR (HU-004)
-app.get('/api/conductor/envios', (req, res) => {
-    const query = `
-        SELECT e.id_envio, e.direccion_entrega, e.estado_envio, c.nombre AS cliente
-        FROM envio e
-        JOIN pedido p ON e.id_pedido = p.id_pedido
-        JOIN cliente c ON p.id_cliente = c.id_cliente
-        ORDER BY e.id_envio DESC
-    `;
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send(err);
-        res.json(results);
-    });
-});
-
-app.post('/api/conductor/actualizar-estado', (req, res) => {
-    const { id_envio, nuevo_estado } = req.body;
-    db.query('UPDATE envio SET estado_envio = ? WHERE id_envio = ?', [nuevo_estado, id_envio], (err) => {
-        if (err) return res.status(500).send(err);
-        res.json({ success: true });
-    });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor de HouseTech S.A.S. en ejecución en puerto ${PORT}`));
+migrar()
+  .then(() => app.listen(PORT, () => console.log(`Servidor ejecutándose en el puerto ${PORT}`)))
+  .catch(e => { console.error('Error al preparar la base de datos:', e); process.exit(1); });
